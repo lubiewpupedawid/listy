@@ -1,0 +1,252 @@
+from random import randint
+
+def generate_unique_id(data: list[dict]) -> int:
+    lst_id = []
+    for user in data:
+        lst_id.append(user.get("id"))
+    new_id = randint(1, 1000000)
+    while new_id in lst_id:
+        new_id = randint(1, 1000000)
+    return new_id
+
+def add_new_user(data: list[dict])-> dict:
+    return {
+        "id": generate_unique_id(data),
+        "name": input("Enter name: ").strip().lower() or None,
+        "surname":input("Enter surname: ").strip().lower() or None,
+        "date of birth":input("date of birth: ").strip().lower() or None,
+        "grades mathematics": [],
+        "grades polish": [], 
+        "grades english":[]        
+    }
+def add_or_remove_grades(data: list[dict])->None: #0
+    name = input("Enter student name: ").strip()
+
+    # find student
+    for user in data:
+        if user.get("name", "").lower() == name.lower():
+
+            print(f"Current grades: {user.get('grades', [])}")
+
+            print("""
+What do you want to do?
+1 - Add grade
+2 - Remove grade
+3 - Replace all grades
+            """)
+
+            choice = input("- ").strip()
+
+            if choice == "1":
+                try:
+                    grade = float(input("Enter new grade: "))
+                    user.setdefault("grades", []).append(grade)
+                except ValueError:
+                    print("Invalid grade")
+
+            elif choice == "2":
+                try:
+                    grade = float(input("Enter grade to remove: "))
+                    if grade in user.get("grades", []):
+                        user["grades"].remove(grade)
+                    else:
+                        print("Grade not found")
+                except ValueError:
+                    print("Invalid grade")
+
+            elif choice == "3":
+                grades_input = input("Enter grades separated by space: ")
+                try:
+                    user["grades"] = [float(g) for g in grades_input.split()]
+                except ValueError:
+                    print("Invalid input")
+
+            else:
+                print("Invalid option")
+
+            return
+
+    print("Student not found")
+
+def find_user_by_id(data: list[dict], user_id: int) -> dict | None: #1
+    for user in data:
+        if user.get("id") == user_id:
+            return user
+    return None
+def find_users_by_name(data: list[dict], name: str) -> list[dict]: #2
+    # normalize input
+    name = name.strip().lower()
+
+    if not name:
+        return []
+
+    return [
+        user for user in data
+        if isinstance(user.get("name"), str)
+        and user.get("name").strip().lower() == name
+    ]
+
+def delete_user_by_id(data: list[dict], user_id: int) -> bool:#3
+    for i, user in enumerate(data):
+        if user.get("id") == user_id:
+            del data[i]
+            return True
+    return False
+
+def update_user_name(user_id: int, new_name: str, loaded_data: list[dict]) -> bool: #4
+    new_name = new_name.strip()
+
+    if not new_name:
+        return False  
+
+    for user in loaded_data:
+        if user.get("id") == user_id:
+            user["name"] = new_name
+            return True
+
+    return False  
+
+def update_user_surname(data: list[dict], user_id: int, new_surname: str) -> bool: #5
+    new_surname = new_surname.strip()
+
+    if not new_surname:
+        return False
+
+    for user in data:
+        if user.get("id") == user_id:
+            user["surname"] = new_surname
+            return True
+
+    return False
+import datetime
+
+def update_user_birth_date(data: list[dict], user_id: int, new_birth_date: str) -> bool: #6
+    new_birth_date = new_birth_date.strip()
+
+    
+    try:
+        datetime.datetime.strptime(new_birth_date, "%Y-%m-%d")
+    except ValueError:
+        return False
+
+    for user in data:
+        if user.get("id") == user_id:
+            user["date_of_birth"] = new_birth_date
+            return True
+
+    return False
+def  is_name_taken(name: str, surname: str, loaded_data: list[dict]) -> bool: #7
+    name = name.strip().lower()
+    surname = surname.strip().lower()
+
+    if not name or not surname:
+        return False
+
+    return any(
+        isinstance(user.get("name"), str) and
+        isinstance(user.get("surname"), str) and
+        user["name"].strip().lower() == name and
+        user["surname"].strip().lower() == surname
+        for user in loaded_data
+    )
+def show_one_user(user: dict) -> None: #8
+    if not user:
+        print("No user data to display")
+        return
+
+    print("========== USER ==========")
+    print(f"ID:        {user.get('id', 'N/A')}")
+    print(f"Name:      {user.get('name', 'N/A')}")
+    print(f"Surname:   {user.get('surname', 'N/A')}")
+    print(f"DOB:       {user.get('date_of_birth', 'N/A')}")
+
+    grades = user.get("grades", [])
+    if grades:
+        print(f"Grades:    {grades}")
+        avg = sum(grades) / len(grades)
+        print(f"Average:   {avg:.2f}")
+    else:
+        print("Grades:    No grades")
+
+    print("==========================")
+
+def count_all_users(data: list[dict]) -> int: #9
+    return len(data)
+
+def count_users_with_missing_name(data: list[dict]) -> int: #10
+    count = 0
+    for user in data:
+        name = user.get("name")
+        if name is None or (isinstance(name, str) and name.strip() == ""):
+            count += 1
+    return count
+ 
+def average_math_for_user(user: dict) -> float | None: #11
+    grades = user.get("grades mathematics", [])
+    
+    if not grades:
+        return None
+    
+    return sum(grades) / len(grades)
+
+def average_polish_for_user(user: dict) -> float | None: #12
+    grades = user.get("grades polish", [])
+    
+    if not grades:
+        return None
+    
+    return sum(grades) / len(grades)
+
+def average_english_for_user(user: dict) -> float | None: #13
+    grades = user.get("grades english", [])
+    
+    if not grades:
+        return None
+    
+    return sum(grades) / len(grades)
+
+def  overall_average_for_user(user: dict) -> float | None: #14
+    all_grades = (
+        user.get("grades mathematics", []) +
+        user.get("grades polish", []) +
+        user.get("grades english", [])
+    )
+    
+    if not all_grades:
+        return None
+    
+    return sum(all_grades) / len(all_grades)
+
+def best_student_in_subject(data: list[dict], subject: str) -> dict | None: #15
+    key = f"grades {subject.lower()}"
+    
+    best_user = None
+    best_avg = None
+
+    for user in data:
+        grades = user.get(key, [])
+        
+        if not grades:
+            continue
+        
+        avg = sum(grades) / len(grades)
+        
+        if best_avg is None or avg > best_avg:
+            best_avg = avg
+            best_user = user
+
+    return best_user
+
+def subject_average_for_all_users(data: list[dict], subject: str) -> float | None: #16
+    key = f"grades {subject.lower()}"
+    
+    all_grades = []
+    
+    for user in data:
+        grades = user.get(key, [])
+        all_grades.extend(grades)
+    
+    if not all_grades:
+        return None
+    
+    return sum(all_grades) / len(all_grades)
