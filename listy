@@ -1,51 +1,453 @@
-from functions import data
-from functions import users
+import data
+import users
+
 import os
-import time 
-
-def program_menu()->None:
-        print(
-    """
-    ================================================
-    \n
-    e - exsit
-    w - add user
-    r - data inf
-    \n
-    ================================================
-    """)
+import time
 
 
-def main(): 
-    loaded_data:list[dict] = data.read_data()
+SUBJECTS = ["mathematics", "polish", "english"]
+
+
+def clear_console() -> None:
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def pause() -> None:
+    input("\nPress Enter to continue...")
+
+
+def menu() -> None:
+
+    print("""
+==================================================
+
+1  - Add new user
+2  - Show all users
+3  - Find user by ID
+4  - Find users by name
+5  - Delete user by ID
+6  - Update user name
+7  - Update user surname
+8  - Update birth date
+9  - Count all users
+10 - Count users with missing name
+11 - Show best student in subject
+12 - Show subject average
+13 - Show one user
+14 - Manage grades
+15 - Check if full name exists
+16 - Show overall average for user
+17 - Save data
+
+0 - Exit
+
+==================================================
+""")
+
+
+def main() -> None:
+
+    loaded_data: list[dict] = data.read_data()
+
     while True:
-        program_menu()
-        inp = input("- ").lower().strip()
-        if inp == "e":
-            print("The program has finished running")
+
+        clear_console()
+        menu()
+
+        choice = input("Select option: ").strip()
+
+        # EXIT
+        if choice == "0":
+
             data.save_data(loaded_data)
+
+            print("Program closed")
+
             break
-        elif inp == "w":
+
+        # ADD USER
+        elif choice == "1":
+
+            clear_console()
+
             new_user = users.add_new_user(loaded_data)
+
             loaded_data.append(new_user)
-            data.save_data(loaded_data)
-        elif inp == "r":
+
+            print("User added successfully")
+
+            pause()
+
+        # SHOW ALL USERS
+        elif choice == "2":
+
+            clear_console()
+
             data.print_all_data(loaded_data)
-        elif inp == "t":
-            pass
-        elif inp == "y":
-            pass
-        elif inp == "u":
-            pass
-        elif inp == "i":
-            pass
-        elif inp == "o":
-            pass
+
+            pause()
+
+        # FIND USER BY ID
+        elif choice == "3":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter ID: "))
+
+                user = users.find_user_by_id(
+                    loaded_data,
+                    user_id
+                )
+
+                if user:
+                    users.show_one_user(user)
+
+                else:
+                    print("User not found")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # FIND USERS BY NAME
+        elif choice == "4":
+
+            clear_console()
+
+            name = input("Enter name: ")
+
+            found_users = users.find_users_by_name(
+                loaded_data,
+                name
+            )
+
+            if found_users:
+
+                for user in found_users:
+                    users.show_one_user(user)
+
+            else:
+                print("No users found")
+
+            pause()
+
+        # DELETE USER
+        elif choice == "5":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter ID to delete: "))
+
+                if users.delete_user_by_id(
+                    loaded_data,
+                    user_id
+                ):
+
+                    print("User deleted")
+
+                else:
+                    print("User not found")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # UPDATE NAME
+        elif choice == "6":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter user ID: "))
+
+                new_name = input("Enter new name: ")
+
+                if users.update_user_name(
+                    user_id,
+                    new_name,
+                    loaded_data
+                ):
+
+                    print("Name updated")
+
+                else:
+                    print("Update failed")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # UPDATE SURNAME
+        elif choice == "7":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter user ID: "))
+
+                new_surname = input(
+                    "Enter new surname: "
+                )
+
+                if users.update_user_surname(
+                    loaded_data,
+                    user_id,
+                    new_surname
+                ):
+
+                    print("Surname updated")
+
+                else:
+                    print("Update failed")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # UPDATE BIRTH DATE
+        elif choice == "8":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter user ID: ")
+
+)
+                new_date = input(
+                    "Enter date (YYYY-MM-DD): "
+                )
+
+                if users.update_user_birth_date(
+                    loaded_data,
+                    user_id,
+                    new_date
+                ):
+
+                    print("Birth date updated")
+
+                else:
+                    print("Invalid date or user not found")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # COUNT USERS
+        elif choice == "9":
+
+            clear_console()
+
+            total = users.count_all_users(
+                loaded_data
+            )
+
+            print(f"Total users: {total}")
+
+            pause()
+
+        # COUNT USERS WITH MISSING NAME
+        elif choice == "10":
+
+            clear_console()
+
+            total = users.count_users_with_missing_name(
+                loaded_data
+            )
+
+            print(
+                f"Users with missing names: {total}"
+            )
+
+            pause()
+
+        # BEST STUDENT
+        elif choice == "11":
+
+            clear_console()
+
+            subject = input(
+                "Enter subject: "
+            ).strip().lower()
+
+            if subject not in SUBJECTS:
+
+                print("Invalid subject")
+
+            else:
+
+                best_user = users.best_student_in_subject(
+                    loaded_data,
+                    subject
+                )
+
+                if best_user:
+
+                    users.show_one_user(best_user)
+
+                else:
+                    print("No grades found")
+
+            pause()
+
+        # SUBJECT AVERAGE
+        elif choice == "12":
+
+            clear_console()
+
+            subject = input(
+                "Enter subject: "
+            ).strip().lower()
+
+            if subject not in SUBJECTS:
+
+                print("Invalid subject")
+
+            else:
+
+                avg = users.subject_average_for_all_users(
+                    loaded_data,
+                    subject
+                )
+
+                if avg is not None:
+
+                    print(
+                        f"{subject.title()} average: "
+                        f"{avg:.2f}"
+                    )
+
+                else:
+                    print("No grades found")
+
+            pause()
+
+        # SHOW ONE USER
+        elif choice == "13":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter user ID: "))
+
+                user = users.find_user_by_id(
+                    loaded_data,
+                    user_id
+                )
+
+                if user:
+
+                    users.show_one_user(user)
+
+                else:
+                    print("User not found")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # MANAGE GRADES
+        elif choice == "14":
+
+            clear_console()
+
+            users.add_or_remove_grades(
+                loaded_data
+            )
+
+            pause()
+
+        # CHECK FULL NAME
+        elif choice == "15":
+
+            clear_console()
+
+            name = input("Enter name: ")
+
+            surname = input("Enter surname: ")
+
+            if users.is_name_taken(
+                loaded_data,
+                name,
+                surname
+            ):
+
+                print("User exists")
+
+            else:
+                print("User does not exist")
+
+            pause()
+
+        # OVERALL AVERAGE
+        elif choice == "16":
+
+            clear_console()
+
+            try:
+
+                user_id = int(input("Enter user ID: "))
+
+                user = users.find_user_by_id(
+                    loaded_data,
+                    user_id
+                )
+
+                if user:
+
+                    avg = users.overall_average_for_user(
+                        user
+                    )
+
+                    if avg is not None:
+
+                        print(
+                            f"Overall average: "
+                            f"{avg:.2f}"
+                        )
+
+                    else:
+                        print("No grades")
+
+                else:
+                    print("User not found")
+
+            except ValueError:
+                print("Invalid ID")
+
+            pause()
+
+        # SAVE DATA
+        elif choice == "17":
+
+            clear_console()
+
+            data.save_data(loaded_data)
+
+            print("Data saved")
+
+            pause()
+
+        # INVALID OPTION
         else:
-            os.system("cls" if os.name == "nt" else "clear")
-            print("There is no such command")
-            time.sleep(2)
+
+            print("Invalid option")
+
+            time.sleep(1.5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
