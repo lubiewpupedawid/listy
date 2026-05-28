@@ -1,0 +1,924 @@
+import random
+import json
+import os
+
+
+
+SAVE_FILE = "savegame.json"
+
+
+
+items = {
+    "Potion": {
+        "heal": 30,
+        "price": 10
+    },
+    "Mega Potion": {
+        "heal": 70,
+        "price": 25
+    }
+}
+
+
+
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.level = 1
+        self.exp = 0
+        self.gold = 50
+
+        self.max_hp = 100
+        self.hp = self.max_hp
+
+        self.attack = 10
+        self.defense = 5
+
+        self.inventory = {
+            "Potion": 3
+        }
+
+    def show_stats(self):
+        print("\n====================")
+        print(f"NAME: {self.name}")
+        print(f"LEVEL: {self.level}")
+        print(f"EXP: {self.exp}")
+        print(f"GOLD: {self.gold}")
+        print(f"HP: {self.hp}/{self.max_hp}")
+        print(f"ATK: {self.attack}")
+        print(f"DEF: {self.defense}")
+        print("====================\n")
+
+    def gain_exp(self, amount):
+        self.exp += amount
+        print(f"\nYou gained {amount} EXP!")
+
+        while self.exp >= self.level * 50:
+            self.level_up()
+
+    def level_up(self):
+        self.exp -= self.level * 50
+        self.level += 1
+
+        self.max_hp += 20
+        self.attack += 4
+        self.defense += 2
+
+        self.hp = self.max_hp
+
+        print("\n====================")
+        print("LEVEL UP!")
+        print(f"You are now level {self.level}")
+        print("====================\n")
+
+    def use_potion(self):
+        if self.inventory.get("Potion", 0) > 0:
+            heal = items["Potion"]["heal"]
+
+            self.hp += heal
+
+            if self.hp > self.max_hp:
+                self.hp = self.max_hp
+
+            self.inventory["Potion"] -= 1
+
+            print(f"\nYou used Potion and healed {heal} HP!")
+
+        else:
+            print("\nNo potions left!")
+
+# =========================================
+# ENEMY CLASS
+# =========================================
+
+class Enemy:
+    def __init__(self, name, hp, attack, defense, exp, gold):
+        self.name = name
+        self.hp = hp
+        self.attack = attack
+        self.defense = defense
+        self.exp = exp
+        self.gold = gold
+
+
+
+enemies = [
+    Enemy("Goblin", 40, 8, 2, 20, 10),
+    Enemy("Skeleton", 55, 10, 3, 30, 15),
+    Enemy("Orc", 80, 14, 5, 45, 25),
+    Enemy("Dark Knight", 120, 18, 8, 80, 50)
+]
+
+
+def battle(player, enemy):
+
+    print("\n===================================")
+    print(f"A wild {enemy.name} appeared!")
+    print("===================================\n")
+
+    while enemy.hp > 0 and player.hp > 0:
+
+        print(f"\n{player.name}: {player.hp}/{player.max_hp} HP")
+        print(f"{enemy.name}: {enemy.hp} HP")
+
+        print("\n1. Attack")
+        print("2. Use Potion")
+        print("3. Run")
+
+        choice = input("> ")
+
+        if choice == "1":
+
+            damage = player.attack - enemy.defense
+
+            if damage < 1:
+                damage = 1
+
+            enemy.hp -= damage
+
+            print(f"\nYou dealt {damage} damage!")
+
+        elif choice == "2":
+            player.use_potion()
+
+        elif choice == "3":
+
+            chance = random.randint(1, 100)
+
+            if chance <= 50:
+                print("\nYou escaped!")
+                return
+            else:
+                print("\nEscape failed!")
+
+        else:
+            print("\nInvalid choice!")
+            continue
+
+        if enemy.hp <= 0:
+            print(f"\nYou defeated {enemy.name}!")
+
+            player.gain_exp(enemy.exp)
+
+            player.gold += enemy.gold
+
+            print(f"You got {enemy.gold} gold!")
+
+            return
+
+        enemy_damage = enemy.attack - player.defense
+
+        if enemy_damage < 1:
+            enemy_damage = 1
+
+        player.hp -= enemy_damage
+
+        print(f"{enemy.name} dealt {enemy_damage} damage!")
+
+        if player.hp <= 0:
+            print("\nYou died...")
+            game_over()
+
+
+
+def shop(player):
+
+    while True:
+
+        print("\n========= SHOP =========")
+        print(f"GOLD: {player.gold}")
+        print("1. Potion - 10 Gold")
+        print("2. Mega Potion - 25 Gold")
+        print("3. Exit")
+        print("========================")
+
+        choice = input("> ")
+
+        if choice == "1":
+
+            if player.gold >= 10:
+
+                player.gold -= 10
+
+                player.inventory["Potion"] = (
+                    player.inventory.get("Potion", 0) + 1
+                )
+
+                print("\nBought Potion!")
+
+            else:
+                print("\nNot enough gold!")
+
+        elif choice == "2":
+
+            if player.gold >= 25:
+
+                player.gold -= 25
+
+                player.inventory["Mega Potion"] = (
+                    player.inventory.get("Mega Potion", 0) + 1
+                )
+
+                print("\nBought Mega Potion!")
+
+            else:
+                print("\nNot enough gold!")
+
+        elif choice == "3":
+            break
+
+
+
+def inventory(player):
+
+    print("\n========= INVENTORY =========")
+
+    for item, amount in player.inventory.items():
+        print(f"{item}: {amount}")
+
+    print("=============================\n")
+
+
+def save_game(player):
+
+    data = {
+        "name": player.name,
+        "level": player.level,
+        "exp": player.exp,
+        "gold": player.gold,
+        "max_hp": player.max_hp,
+        "hp": player.hp,
+        "attack": player.attack,
+        "defense": player.defense,
+        "inventory": player.inventory
+    }
+
+    with open(SAVE_FILE, "w") as file:
+        json.dump(data, file)
+
+    print("\nGame saved!")
+
+def load_game():
+
+    if not os.path.exists(SAVE_FILE):
+        return None
+
+    with open(SAVE_FILE, "r") as file:
+        data = json.load(file)
+
+    player = Player(data["name"])
+
+    player.level = data["level"]
+    player.exp = data["exp"]
+    player.gold = data["gold"]
+    player.max_hp = data["max_hp"]
+    player.hp = data["hp"]
+    player.attack = data["attack"]
+    player.defense = data["defense"]
+    player.inventory = data["inventory"]
+
+    return player
+
+
+def explore(player):
+
+    print("\nYou explore the area...")
+
+    event = random.randint(1, 100)
+
+    if event <= 70:
+
+        enemy = random.choice(enemies)
+
+        enemy_copy = Enemy(
+            enemy.name,
+            enemy.hp,
+            enemy.attack,
+            enemy.defense,
+            enemy.exp,
+            enemy.gold
+        )
+
+        battle(player, enemy_copy)
+
+    elif event <= 90:
+
+        gold = random.randint(5, 25)
+
+        player.gold += gold
+
+        print(f"\nYou found {gold} gold!")
+
+    else:
+
+        print("\nYou found a hidden potion!")
+
+        player.inventory["Potion"] = (
+            player.inventory.get("Potion", 0) + 1
+        )
+
+
+
+def game_over():
+
+    print("\n===================")
+    print("GAME OVER")
+    print("===================\n")
+
+    exit()
+
+
+
+def main_menu(player):
+
+    while True:
+
+        print("\n========== MENU ==========")
+        print("1. Explore")
+        print("2. Stats")
+        print("3. Inventory")
+        print("4. Shop")
+        print("5. Save Game")
+        print("6. Exit")
+        print("==========================")
+
+        choice = input("> ")
+
+        if choice == "1":
+            explore(player)
+
+        elif choice == "2":
+            player.show_stats()
+
+        elif choice == "3":
+            inventory(player)
+
+        elif choice == "4":
+            shop(player)
+
+        elif choice == "5":
+            save_game(player)
+
+        elif choice == "6":
+            print("\nGoodbye!")
+            break
+
+        else:
+            print("\nInvalid option!")
+
+
+
+def start():
+
+    print("\n==========================")
+    print(" PYTHON RPG ")
+    print("==========================")
+
+    print("\n1. New Game")
+    print("2. Load Game")
+
+    choice = input("> ")
+
+    if choice == "1":
+
+        name = input("\nEnter your name: ")
+
+        player = Player(name)
+
+        main_menu(player)
+
+    elif choice == "2":
+
+        player = load_game()
+
+        if player:
+            print("\nSave loaded!")
+            main_menu(player)
+        else:
+            print("\nNo save file found!")
+
+    else:
+        print("\nInvalid choice!")
+
+
+
+start()
+
+
+
+classes = {
+    "Warrior": {
+        "hp": 150,
+        "attack": 15,
+        "defense": 10,
+        "mana": 20
+    },
+
+    "Mage": {
+        "hp": 80,
+        "attack": 8,
+        "defense": 4,
+        "mana": 120
+    },
+
+    "Rogue": {
+        "hp": 100,
+        "attack": 12,
+        "defense": 6,
+        "mana": 40
+    }
+}
+
+
+spells = {
+    "Fireball": {
+        "damage": 35,
+        "mana": 20
+    },
+
+    "Ice Spike": {
+        "damage": 25,
+        "mana": 15
+    },
+
+    "Lightning": {
+        "damage": 50,
+        "mana": 35
+    }
+}
+
+weapons = {
+    "Wooden Sword": 5,
+    "Iron Sword": 12,
+    "Steel Sword": 20,
+    "Magic Staff": 30,
+    "Shadow Dagger": 25
+}
+
+
+armors = {
+    "Leather Armor": 3,
+    "Iron Armor": 7,
+    "Knight Armor": 15
+}
+
+
+
+quests = [
+    {
+        "name": "Kill 3 Goblins",
+        "reward_gold": 50,
+        "reward_exp": 40
+    },
+
+    {
+        "name": "Defeat Skeleton King",
+        "reward_gold": 120,
+        "reward_exp": 100
+    }
+]
+
+
+npcs = [
+    "Old Wizard",
+    "Village Trader",
+    "Knight Captain",
+    "Mysterious Woman"
+]
+
+def talk_to_npc():
+
+    npc = random.choice(npcs)
+
+    print(f"\nYou meet {npc}")
+
+    dialogues = [
+        "Danger is coming...",
+        "The forest hides monsters.",
+        "You need better armor.",
+        "Magic is powerful."
+    ]
+
+    print(random.choice(dialogues))
+
+
+
+def cast_spell(player, enemy):
+
+    print("\nChoose spell:")
+
+    spell_list = list(spells.keys())
+
+    for i, spell in enumerate(spell_list):
+        data = spells[spell]
+
+        print(
+            f"{i+1}. {spell} "
+            f"(DMG {data['damage']}, "
+            f"Mana {data['mana']})"
+        )
+
+    choice = input("> ")
+
+    try:
+
+        spell_name = spell_list[int(choice)-1]
+
+        spell = spells[spell_name]
+
+        if player.mana >= spell["mana"]:
+
+            player.mana -= spell["mana"]
+
+            enemy.hp -= spell["damage"]
+
+            print(
+                f"\nYou cast {spell_name}!"
+            )
+
+            print(
+                f"{enemy.name} took "
+                f"{spell['damage']} damage!"
+            )
+
+        else:
+            print("\nNot enough mana!")
+
+    except:
+        print("\nInvalid spell!")
+
+
+
+class AdvancedPlayer(Player):
+
+    def __init__(self, name, player_class):
+
+        super().__init__(name)
+
+        data = classes[player_class]
+
+        self.player_class = player_class
+
+        self.max_hp = data["hp"]
+        self.hp = self.max_hp
+
+        self.attack = data["attack"]
+        self.defense = data["defense"]
+
+        self.mana = data["mana"]
+        self.max_mana = data["mana"]
+
+        self.weapon = None
+        self.armor = None
+
+        self.quest_log = []
+
+        self.materials = {
+            "Iron": 0,
+            "Wood": 0,
+            "Crystal": 0
+        }
+
+    def show_stats(self):
+
+        print("\n======================")
+        print(f"NAME: {self.name}")
+        print(f"CLASS: {self.player_class}")
+        print(f"LEVEL: {self.level}")
+        print(f"HP: {self.hp}/{self.max_hp}")
+        print(f"MANA: {self.mana}/{self.max_mana}")
+        print(f"ATK: {self.attack}")
+        print(f"DEF: {self.defense}")
+        print(f"GOLD: {self.gold}")
+
+        print(f"WEAPON: {self.weapon}")
+        print(f"ARMOR: {self.armor}")
+
+        print("======================")
+
+
+
+def equip_weapon(player):
+
+    print("\nAvailable weapons:")
+
+    for weapon in weapons:
+        print("-", weapon)
+
+    choice = input("> ")
+
+    if choice in weapons:
+
+        player.weapon = choice
+
+        bonus = weapons[choice]
+
+        player.attack += bonus
+
+        print(f"\nEquipped {choice}")
+
+
+def equip_armor(player):
+
+    print("\nAvailable armors:")
+
+    for armor in armors:
+        print("-", armor)
+
+    choice = input("> ")
+
+    if choice in armors:
+
+        player.armor = choice
+
+        bonus = armors[choice]
+
+        player.defense += bonus
+
+        print(f"\nEquipped {choice}")
+
+
+
+def crafting(player):
+
+    print("\n========= CRAFTING =========")
+
+    print("1. Iron Sword")
+    print("Requires: 3 Iron")
+
+    print("2. Magic Staff")
+    print("Requires: 2 Crystal")
+
+    choice = input("> ")
+
+    if choice == "1":
+
+        if player.materials["Iron"] >= 3:
+
+            player.materials["Iron"] -= 3
+
+            player.inventory["Iron Sword"] = 1
+
+            print("\nCrafted Iron Sword!")
+
+        else:
+            print("\nNot enough Iron!")
+
+    elif choice == "2":
+
+        if player.materials["Crystal"] >= 2:
+
+            player.materials["Crystal"] -= 2
+
+            player.inventory["Magic Staff"] = 1
+
+            print("\nCrafted Magic Staff!")
+
+        else:
+            print("\nNot enough Crystal!")
+
+
+
+def gather_materials(player):
+
+    found = random.choice([
+        "Iron",
+        "Wood",
+        "Crystal"
+    ])
+
+    amount = random.randint(1, 3)
+
+    player.materials[found] += amount
+
+    print(
+        f"\nYou found "
+        f"{amount}x {found}"
+    )
+
+
+
+bosses = [
+    Enemy(
+        "Dragon",
+        300,
+        35,
+        15,
+        300,
+        200
+    ),
+
+    Enemy(
+        "Skeleton King",
+        220,
+        28,
+        12,
+        200,
+        140
+    )
+]
+
+def boss_battle(player):
+
+    boss = random.choice(bosses)
+
+    boss_copy = Enemy(
+        boss.name,
+        boss.hp,
+        boss.attack,
+        boss.defense,
+        boss.exp,
+        boss.gold
+    )
+
+    print("\n======================")
+    print(f"BOSS: {boss_copy.name}")
+    print("======================")
+
+    battle(player, boss_copy)
+
+
+
+def quest_board(player):
+
+    print("\n========= QUESTS =========")
+
+    for i, quest in enumerate(quests):
+
+        print(
+            f"{i+1}. "
+            f"{quest['name']}"
+        )
+
+    choice = input("> ")
+
+    try:
+
+        quest = quests[int(choice)-1]
+
+        player.quest_log.append(quest)
+
+        print(
+            f"\nAccepted quest:"
+            f" {quest['name']}"
+        )
+
+    except:
+        print("\nInvalid quest!")
+
+
+
+def dungeon(player):
+
+    print("\nEntering dungeon...")
+
+    for i in range(3):
+
+        enemy = random.choice(enemies)
+
+        enemy_copy = Enemy(
+            enemy.name,
+            enemy.hp,
+            enemy.attack,
+            enemy.defense,
+            enemy.exp,
+            enemy.gold
+        )
+
+        battle(player, enemy_copy)
+
+    print("\nDungeon cleared!")
+
+    reward = random.randint(50, 120)
+
+    player.gold += reward
+
+    print(
+        f"You earned "
+        f"{reward} gold!"
+    )
+
+
+
+guilds = [
+    "Warriors Guild",
+    "Mages Guild",
+    "Shadow Brotherhood"
+]
+
+def join_guild(player):
+
+    print("\nChoose guild:")
+
+    for guild in guilds:
+        print("-", guild)
+
+    choice = input("> ")
+
+    if choice in guilds:
+
+        player.guild = choice
+
+        print(
+            f"\nYou joined "
+            f"{choice}"
+        )
+
+
+def advanced_menu(player):
+
+    while True:
+
+        print("\n========= RPG MENU =========")
+        print("1. Explore")
+        print("2. Stats")
+        print("3. Inventory")
+        print("4. Shop")
+        print("5. Quest Board")
+        print("6. Boss Battle")
+        print("7. Dungeon")
+        print("8. Crafting")
+        print("9. Gather Materials")
+        print("10. Equip Weapon")
+        print("11. Equip Armor")
+        print("12. Talk To NPC")
+        print("13. Join Guild")
+        print("14. Save")
+        print("15. Exit")
+        print("============================")
+
+        choice = input("> ")
+
+        if choice == "1":
+            explore(player)
+
+        elif choice == "2":
+            player.show_stats()
+
+        elif choice == "3":
+            inventory(player)
+
+        elif choice == "4":
+            shop(player)
+
+        elif choice == "5":
+            quest_board(player)
+
+        elif choice == "6":
+            boss_battle(player)
+
+        elif choice == "7":
+            dungeon(player)
+
+        elif choice == "8":
+            crafting(player)
+
+        elif choice == "9":
+            gather_materials(player)
+
+        elif choice == "10":
+            equip_weapon(player)
+
+        elif choice == "11":
+            equip_armor(player)
+
+        elif choice == "12":
+            talk_to_npc()
+
+        elif choice == "13":
+            join_guild(player)
+
+        elif choice == "14":
+            save_game(player)
+
+        elif choice == "15":
+            break
+
+
+def advanced_start():
+
+    print("\nChoose class:")
+    print("1. Warrior")
+    print("2. Mage")
+    print("3. Rogue")
+
+    choice = input("> ")
+
+    if choice == "1":
+        player_class = "Warrior"
+
+    elif choice == "2":
+        player_class = "Mage"
+
+    else:
+        player_class = "Rogue"
+
+    name = input("\nEnter name: ")
+
+    player = AdvancedPlayer(
+        name,
+        player_class
+    )
+
+    advanced_menu(player)
+
